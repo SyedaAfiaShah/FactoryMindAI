@@ -54,7 +54,7 @@ async def init_models() -> None:
         
         if found_real or found_sample:
             found_path = found_real if found_real else found_sample
-            print(f"✅ DATA FOUND: {found_path}. Training now...")
+            print(f"[OK] DATA FOUND: {found_path}. Training now...")
             df = pd.read_csv(found_path)
             
             # If it's the Kaggle dataset, preprocess it to match our format
@@ -76,10 +76,10 @@ async def init_models() -> None:
             predictor = MaintenancePredictor()
             predictor.train(df)
             save_model(predictor, "maintenance_predictor")
-            print("🚀 Model training complete and saved.")
+            print("[SUCCESS] Model training complete and saved.")
         else:
             paths_str = "Could not find ai4i2020.csv or sample_sensor_data.csv in expected locations."
-            print(f"❌ CRITICAL ERROR: Could not find training data in any of these locations:\n{paths_str}")
+            print(f"[ERROR] CRITICAL ERROR: Could not find training data in any of these locations:\n{paths_str}")
             predictor = MaintenancePredictor()
     
     return predictor
