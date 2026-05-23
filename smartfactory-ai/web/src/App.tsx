@@ -462,7 +462,7 @@ export default function App() {
     let attempts = 0;
     const interval = setInterval(async () => {
       attempts++;
-      if (attempts > 90) {
+      if (attempts > 250) {
         clearInterval(interval);
         setAnalysisStatus('error');
         setErrorMessage('Analysis pipeline request timed out.');
