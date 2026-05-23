@@ -1889,46 +1889,171 @@ export default function App() {
                 </div>
 
                 {results.simulations && results.simulations.length > 0 ? (
-                  results.simulations.map(sim => (
-                    <div key={sim.id} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                      <div className="sim-grid">
-                        <div className="sim-state-box">
-                          <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 800 }}>BEFORE STATE</span>
-                          <div className="sim-state-val" style={{ color: 'var(--state-critical)' }}>
-                            {sim.before_state?.risk_score || 82}% Risk
-                          </div>
-                          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                            OEE: {sim.before_state?.production_efficiency || 74}%
-                          </span>
-                        </div>
+                  results.simulations.map(sim => {
+                    const beforeRisk = sim.before_state?.risk_score ?? 82;
+                    const beforeOEE = sim.before_state?.production_efficiency ?? 74;
+                    const afterRisk = sim.after_state?.risk_score ?? 16;
+                    const afterOEE = sim.after_state?.production_efficiency ?? 88;
 
-                        <div className="sim-arrow">
-                          <strong>➔➔➔</strong>
-                        </div>
-
-                        <div className="sim-state-box" style={{ border: '1px solid var(--state-success)' }}>
-                          <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 800 }}>AFTER MITIGATION</span>
-                          <div className="sim-state-val" style={{ color: 'var(--state-success)' }}>
-                            {sim.after_state?.risk_score || 16}% Risk
-                          </div>
-                          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                            OEE: {sim.after_state?.production_efficiency || 88}%
-                          </span>
-                        </div>
-                      </div>
-
-                      <div style={{ backgroundColor: 'var(--bg-primary)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)', marginTop: '10px' }}>
-                        <span style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 800, display: 'block', marginBottom: '8px' }}>Simulation Log Details</span>
-                        <div className="sim-logs">
-                          {sim.execution_log && sim.execution_log.map((log: any, lIdx: number) => (
-                            <div key={lIdx} style={{ marginBottom: '4px' }}>
-                              <span style={{ color: 'var(--accent-orange)' }}>[{log.timestamp || '12:00:00'}]</span> {log.message}
+                    // Inline Circular Gauge Renderer
+                    const renderCircularGauge = (value: number, color: string, label: string) => {
+                      const cleanVal = Math.min(100, Math.max(0, value));
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ position: 'relative', width: '68px', height: '68px' }}>
+                            <svg width="100%" height="100%" viewBox="0 0 36 36" style={{ transform: 'rotate(-90deg)' }}>
+                              <path
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                fill="none"
+                                stroke="rgba(255, 255, 255, 0.08)"
+                                strokeWidth="3"
+                              />
+                              <path
+                                strokeDasharray={`${cleanVal}, 100`}
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                fill="none"
+                                stroke={color}
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                                style={{ transition: 'stroke-dasharray 0.5s ease-in-out' }}
+                              />
+                            </svg>
+                            <div style={{
+                              position: 'absolute',
+                              top: '50%',
+                              left: '50%',
+                              transform: 'translate(-50%, -50%)',
+                              fontSize: '13px',
+                              fontWeight: 800,
+                              color: '#fff'
+                            }}>
+                              {cleanVal}%
                             </div>
-                          ))}
+                          </div>
+                          <span style={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>{label}</span>
+                        </div>
+                      );
+                    };
+
+                    // Inline Telemetry Bar Renderer
+                    const renderTelemetryBar = (name: string, beforeVal: number, afterVal: number, unit: string) => {
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', backgroundColor: 'var(--bg-primary)', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                          <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-secondary)' }}>{name}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--state-critical)' }}>{beforeVal}{unit}</span>
+                            <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>➔</span>
+                            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--state-success)' }}>{afterVal}{unit}</span>
+                          </div>
+                          <div style={{ height: '4px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden', display: 'flex', marginTop: '4px' }}>
+                            <div style={{ width: `${(beforeVal / (beforeVal + afterVal)) * 100}%`, backgroundColor: 'var(--state-critical)', opacity: 0.5 }} />
+                            <div style={{ flex: 1, backgroundColor: 'var(--state-success)' }} />
+                          </div>
+                        </div>
+                      );
+                    };
+
+                    return (
+                      <div key={sim.id} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        {/* 1. Sync Signal Header */}
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          backgroundColor: 'rgba(34, 197, 94, 0.05)',
+                          border: '1px dashed rgba(34, 197, 94, 0.2)',
+                          padding: '10px 14px',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          color: 'var(--state-success)',
+                          fontWeight: 600,
+                          marginBottom: '5px'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span className="pulse-indicator" style={{
+                              width: '8px',
+                              height: '8px',
+                              backgroundColor: 'var(--state-success)',
+                              borderRadius: '50%',
+                              display: 'inline-block',
+                              boxShadow: '0 0 8px var(--state-success)'
+                            }}></span>
+                            <span>DIGITAL TWIN STATUS: SYNCHRONIZED & ACTIVE</span>
+                          </div>
+                          <span style={{ fontSize: '10px', opacity: 0.8, fontFamily: 'var(--font-mono)' }}>REFRESH RATE: 50Hz</span>
+                        </div>
+
+                        {/* 2. Before vs After State Circle Gauges */}
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr auto 1fr',
+                          gap: '20px',
+                          alignItems: 'center',
+                          backgroundColor: 'var(--bg-primary)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '8px',
+                          padding: '20px'
+                        }}>
+                          {/* Before State */}
+                          <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '12px',
+                            padding: '16px',
+                            background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.04), rgba(239, 68, 68, 0.01))',
+                            border: '1px solid rgba(239, 68, 68, 0.15)',
+                            borderRadius: '8px'
+                          }}>
+                            <span style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--state-critical)', letterSpacing: '0.05em' }}>Before Action</span>
+                            <div style={{ display: 'flex', gap: '16px' }}>
+                              {renderCircularGauge(beforeRisk, 'var(--state-critical)', 'Risk Index')}
+                              {renderCircularGauge(beforeOEE, '#f59e0b', 'OEE')}
+                            </div>
+                          </div>
+
+                          <div style={{ fontSize: '18px', color: 'var(--text-muted)', fontWeight: 800 }}>➔</div>
+
+                          {/* After State */}
+                          <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '12px',
+                            padding: '16px',
+                            background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.04), rgba(34, 197, 94, 0.01))',
+                            border: '1px solid rgba(34, 197, 94, 0.2)',
+                            borderRadius: '8px'
+                          }}>
+                            <span style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--state-success)', letterSpacing: '0.05em' }}>After Mitigation</span>
+                            <div style={{ display: 'flex', gap: '16px' }}>
+                              {renderCircularGauge(afterRisk, 'var(--state-success)', 'Risk Index')}
+                              {renderCircularGauge(afterOEE, 'var(--accent-blue)', 'OEE')}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 3. Physical Telemetry Parameter Deltas */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                          {renderTelemetryBar('Joint Temperature', 319.2, 301.6, ' K')}
+                          {renderTelemetryBar('Vibration Severity', 2.3, 0.5, ' mm/s')}
+                          {renderTelemetryBar('Duty Cycle Load', 92.5, 45.0, '%')}
+                        </div>
+
+                        {/* 4. Terminal Log Details */}
+                        <div style={{ backgroundColor: '#0c0f17', padding: '16px', borderRadius: '8px', border: '1px solid #1a2333', marginTop: '5px', boxShadow: 'inset 0 0 10px rgba(0,0,0,0.8)' }}>
+                          <span style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--accent-orange)', fontWeight: 800, display: 'block', marginBottom: '8px', fontFamily: 'var(--font-mono)' }}>$ cat /var/log/digital_twin_simulation.log</span>
+                          <div className="sim-logs" style={{ color: '#38bdf8', fontFamily: 'var(--font-mono)', maxHeight: '110px' }}>
+                            {sim.execution_log && sim.execution_log.map((log: any, lIdx: number) => (
+                              <div key={lIdx} style={{ marginBottom: '4px', fontSize: '11px' }}>
+                                <span style={{ color: '#22c55e' }}>[{log.timestamp || '12:00:00'}]</span> {log.message}
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div className="empty-state">
                     <p style={{ fontSize: '12px' }}>No simulation profiles logged for this scenario.</p>
