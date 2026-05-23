@@ -509,7 +509,7 @@ export default function App() {
       } catch (err) {
         console.error(err);
       }
-    }, 2500);
+    }, 1200);
   };
 
   const updateLivePollingLogs = (stepCount: number) => {
@@ -678,7 +678,7 @@ export default function App() {
         // Update scenarios list status
         setScenarios(prev => prev.map(s => s.id === scenarioId ? { ...s, status: 'complete' } : s));
       }
-    }, 2800);
+    }, 1200);
   };
 
   // Helper to delete a scenario
