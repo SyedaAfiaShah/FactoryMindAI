@@ -195,13 +195,23 @@ class AntigravityOrchestrator:
                     logger.warning(f"Failed to save minimal trace for {agent_name}: {fallback_error}")
 
     async def _store_results_in_tables(self, scenario_id: str, results: Dict[str, Any]) -> None:
-        """Stores the parsed agent results into their respective Supabase tables."""
+        """Stores the parsed agent results into their respective Supabase tables in parallel batches."""
+        import asyncio
+        sem = asyncio.Semaphore(1)
+
+        async def safe_insert(table: str, data: Dict[str, Any]) -> Dict[str, Any]:
+            async with sem:
+                return await self.supabase.insert_row(table, data)
+
         try:
-            # 1. Insights
+            # Step 1: Insert Insights, Contradictions, and Actions in parallel
+            primary_tasks = []
+            
+            # 1a. Insights
             for insight in results.get("insights", []):
                 severity_map = {"critical": "critical", "high": "high", "medium": "medium", "low": "low"}
                 severity = severity_map.get(insight.get("urgency", "").lower(), "medium")
-                await self.supabase.insert_row("insights", {
+                primary_tasks.append(safe_insert("insights", {
                     "scenario_id": scenario_id,
                     "category": "machine_health",
                     "severity": severity,
@@ -211,12 +221,12 @@ class AntigravityOrchestrator:
                     "confidence": 0.9,
                     "machine_id": insight.get("machine_id"),
                     "created_at": datetime.utcnow().isoformat()
-                })
+                }))
 
             # Also add Demand Forecast as an insight
             demand_data = results.get("demand_forecast", {})
             if demand_data:
-                await self.supabase.insert_row("insights", {
+                primary_tasks.append(safe_insert("insights", {
                     "scenario_id": scenario_id,
                     "category": "demand",
                     "severity": "high" if float(demand_data.get("stockout_risk_pct", 0)) >= 50 else "medium",
@@ -225,11 +235,11 @@ class AntigravityOrchestrator:
                     "evidence": demand_data,
                     "confidence": 0.85,
                     "created_at": datetime.utcnow().isoformat()
-                })
+                }))
 
-            # 2. Contradictions
+            # 1b. Contradictions
             for contra in results.get("contradictions", []):
-                await self.supabase.insert_row("contradictions", {
+                primary_tasks.append(safe_insert("contradictions", {
                     "scenario_id": scenario_id,
                     "field_name": contra.get("field"),
                     "source_a_name": "Source A",
@@ -241,12 +251,13 @@ class AntigravityOrchestrator:
                     "resolution": f"{contra.get('resolution')}. Recommendation: {contra.get('recommendation')}",
                     "confidence": float(contra.get("confidence", 0.8)),
                     "created_at": datetime.utcnow().isoformat()
-                })
+                }))
 
-            # 3. Actions & Action Steps
-            action_map = {}
-            for action in results.get("actions", []):
-                inserted_action = await self.supabase.insert_row("actions", {
+            # 1c. Actions
+            actions = results.get("actions", [])
+            action_start_idx = len(primary_tasks)
+            for action in actions:
+                primary_tasks.append(safe_insert("actions", {
                     "scenario_id": scenario_id,
                     "action_code": action.get("id"),
                     "title": action.get("title"),
@@ -259,24 +270,44 @@ class AntigravityOrchestrator:
                     "target_system": action.get("target_system"),
                     "status": "recommended",
                     "created_at": datetime.utcnow().isoformat()
-                })
-                if inserted_action and "id" in inserted_action:
+                }))
+            
+            # Execute primary tasks
+            primary_results = await asyncio.gather(*primary_tasks, return_exceptions=True)
+            
+            # Log any exceptions
+            for idx, r in enumerate(primary_results):
+                if isinstance(r, Exception):
+                    logger.error(f"Error during primary database insertion at index {idx}: {r}")
+
+            # Build action map
+            action_map = {}
+            inserted_actions = primary_results[action_start_idx : action_start_idx + len(actions)]
+            for action, inserted_action in zip(actions, inserted_actions):
+                if inserted_action and not isinstance(inserted_action, Exception) and "id" in inserted_action:
                     action_map[action.get("id")] = inserted_action["id"]
-                    
-                    # Store action steps
+
+            # Step 2: Insert Action Steps and Simulations in parallel
+            secondary_tasks = []
+            
+            # 2a. Action Steps
+            for action in actions:
+                internal_action_id = action_map.get(action.get("id"))
+                if internal_action_id:
                     for idx, step_desc in enumerate(action.get("steps", [])):
-                        await self.supabase.insert_row("action_steps", {
-                            "action_id": inserted_action["id"],
+                        secondary_tasks.append(safe_insert("action_steps", {
+                            "action_id": internal_action_id,
                             "step_order": idx + 1,
                             "description": step_desc,
                             "target_actor": "Maintenance Team",
                             "estimated_duration_min": 30,
                             "created_at": datetime.utcnow().isoformat()
-                        })
-
-            # 4. Simulations & Notifications
-            for sim in results.get("simulation", []):
-                # Lookup internal action ID
+                        }))
+            
+            # 2b. Simulations
+            simulations = results.get("simulation", [])
+            sim_start_idx = len(secondary_tasks)
+            for sim in simulations:
                 action_code = sim.get("action_id")
                 internal_action_id = action_map.get(action_code)
                 
@@ -295,7 +326,7 @@ class AntigravityOrchestrator:
                     "daily_cost": after.get("cost_per_day")
                 }
                 
-                inserted_sim = await self.supabase.insert_row("simulations", {
+                secondary_tasks.append(safe_insert("simulations", {
                     "scenario_id": scenario_id,
                     "action_id": internal_action_id,
                     "before_state": before_std,
@@ -307,12 +338,26 @@ class AntigravityOrchestrator:
                     },
                     "execution_log": [{"timestamp": datetime.utcnow().strftime('%H:%M:%S'), "message": step} for step in sim.get("execution_steps", [])],
                     "created_at": datetime.utcnow().isoformat()
-                })
-                
-                if inserted_sim and "id" in inserted_sim:
+                }))
+            
+            secondary_results = await asyncio.gather(*secondary_tasks, return_exceptions=True)
+            
+            # Log any exceptions
+            for idx, r in enumerate(secondary_results):
+                if isinstance(r, Exception):
+                    logger.error(f"Error during secondary database insertion at index {idx}: {r}")
+
+            # Build simulation list mapping
+            inserted_sims = secondary_results[sim_start_idx : sim_start_idx + len(simulations)]
+
+            # Step 3: Insert Notifications in parallel
+            notification_tasks = []
+            for sim, inserted_sim in zip(simulations, inserted_sims):
+                if inserted_sim and not isinstance(inserted_sim, Exception) and "id" in inserted_sim:
+                    action_code = sim.get("action_id")
                     # Store notifications
                     for notif in results.get("notifications", []):
-                        await self.supabase.insert_row("notifications", {
+                        notification_tasks.append(safe_insert("notifications", {
                             "simulation_id": inserted_sim["id"],
                             "channel": notif.get("channel", "Email"),
                             "recipient_role": notif.get("recipient"),
@@ -321,7 +366,13 @@ class AntigravityOrchestrator:
                             "subject": f"SmartFactory AI Alert: Action {action_code}",
                             "sent_at": datetime.utcnow().isoformat(),
                             "created_at": datetime.utcnow().isoformat()
-                        })
+                        }))
+            
+            if notification_tasks:
+                notification_results = await asyncio.gather(*notification_tasks, return_exceptions=True)
+                for idx, r in enumerate(notification_results):
+                    if isinstance(r, Exception):
+                        logger.error(f"Error during notification database insertion at index {idx}: {r}")
 
         except Exception as e:
             logger.error(f"Failed to store structured results in tables: {e}")

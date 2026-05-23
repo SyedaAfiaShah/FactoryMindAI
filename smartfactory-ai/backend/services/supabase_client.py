@@ -1,4 +1,5 @@
 import os
+import asyncio
 from typing import Dict, List, Any, Optional
 from supabase import create_client, Client
 from dotenv import load_dotenv
@@ -36,7 +37,8 @@ class SupabaseService:
         Returns:
             The inserted row data.
         """
-        response = self._client.table(table).insert(data).execute()
+        # Run synchronous insert request in a thread pool to avoid blocking the event loop
+        response = await asyncio.to_thread(self._client.table(table).insert(data).execute)
         return response.data[0] if response.data else {}
 
     async def fetch_rows(self, table: str, filters: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
@@ -54,7 +56,9 @@ class SupabaseService:
         if filters:
             for key, value in filters.items():
                 query = query.eq(key, value)
-        response = query.execute()
+        
+        # Run synchronous select request in a thread pool
+        response = await asyncio.to_thread(query.execute)
         return response.data
 
     async def delete_row(self, table: str, row_id: str) -> bool:
@@ -68,8 +72,10 @@ class SupabaseService:
         Returns:
             True if deletion was successful.
         """
-        response = self._client.table(table).delete().eq("id", row_id).execute()
+        # Run synchronous delete request in a thread pool
+        response = await asyncio.to_thread(self._client.table(table).delete().eq("id", row_id).execute)
         return len(response.data) > 0
 
 # Global instance for easy import
 supabase_service = SupabaseService()
+
