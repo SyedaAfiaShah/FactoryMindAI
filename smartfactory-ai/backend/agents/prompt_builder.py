@@ -124,7 +124,7 @@ def _aggregate_predictions_by_machine(sensor_data: List[Dict[str, Any]], ml_resu
 
 def _append_text_bucket(bucket: List[Dict[str, Any]], source: Dict[str, Any]) -> None:
     bucket.append({
-        "content": source.get("content", ""),
+        "content": source.get("raw_content") or source.get("content") or "",
         "created_at": source.get("created_at"),
         "source_type": source.get("source_type"),
     })
@@ -154,7 +154,7 @@ async def build_scenario_payload(scenario_id: str) -> Dict[str, Any]:
 
     for source in ordered_sources:
         source_type = source.get("source_type")
-        payload = source.get("payload") or []
+        payload = source.get("parsed_data") or source.get("payload") or []
 
         if source_type == "sensor_csv":
             sensor_data.extend(_normalize_sensor_row(row) for row in payload if isinstance(row, dict))

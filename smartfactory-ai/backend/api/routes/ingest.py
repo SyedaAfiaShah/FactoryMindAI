@@ -200,7 +200,7 @@ async def ingest_sensor_data(
             {
                 "scenario_id": id,
                 "source_type": "sensor_csv",
-                "payload": rows,
+                "parsed_data": rows,
             },
         )
 
@@ -241,7 +241,7 @@ async def ingest_default_sensor_data(
             {
                 "scenario_id": id,
                 "source_type": "sensor_csv",
-                "payload": rows,
+                "parsed_data": rows,
             },
         )
         await supabase_service.insert_row(
@@ -249,7 +249,7 @@ async def ingest_default_sensor_data(
             {
                 "scenario_id": id,
                 "source_type": "operator_note",
-                "content": (
+                "raw_content": (
                     f"{request.machine_id} flagged under preset scenario {request.scenario_type} "
                     f"using {request.dataset_source} demo telemetry. Analyze the sensor stream, trained scaler behavior, and likely failure path."
                 ),
@@ -261,7 +261,7 @@ async def ingest_default_sensor_data(
                 {
                     "scenario_id": id,
                     "source_type": "email",
-                    "content": f"Operations email says {request.machine_id} should stay online for urgent output, despite severe sensor alarms.",
+                    "raw_content": f"Operations email says {request.machine_id} should stay online for urgent output, despite severe sensor alarms.",
                 },
             )
             await supabase_service.insert_row(
@@ -269,7 +269,7 @@ async def ingest_default_sensor_data(
                 {
                     "scenario_id": id,
                     "source_type": "news",
-                    "content": "Expedite pressure is high due to a customer escalation and shortage of backup line capacity.",
+                    "raw_content": "Expedite pressure is high due to a customer escalation and shortage of backup line capacity.",
                 },
             )
 
@@ -302,7 +302,7 @@ async def ingest_text_data(
         data_to_insert = {
             "scenario_id": id,
             "source_type": request.type,
-            "content": request.content,
+            "raw_content": request.content,
         }
         await supabase_service.insert_row("data_sources", data_to_insert)
         return {"status": "success", "scenario_id": id, "type": request.type}
@@ -345,7 +345,7 @@ async def ingest_generic_csv(
             {
                 "scenario_id": id,
                 "source_type": f"generic_csv_{type}",
-                "payload": rows,
+                "parsed_data": rows,
             },
         )
 
