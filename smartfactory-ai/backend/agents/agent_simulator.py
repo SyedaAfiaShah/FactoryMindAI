@@ -47,6 +47,6 @@ REQUIRED OUTPUT JSON:
 }}
 
 CRITICAL:
-Respond ONLY with valid JSON matching this exact schema. No markdown, no explanation.
+Respond ONLY with valid JSON matching the output schema. No markdown, no explanation.
 """
     return prompt.strip()

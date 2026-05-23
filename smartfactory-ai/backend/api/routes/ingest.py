@@ -6,8 +6,8 @@ from typing import List
 import pandas as pd
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 
-from ...services.supabase_client import supabase_service
-from ..models.scenario import DefaultSensorDatasetRequest, IngestTextRequest
+from services.supabase_client import supabase_service
+from api.models.scenario import DefaultSensorDatasetRequest, IngestTextRequest
 
 router = APIRouter(prefix="/scenarios", tags=["ingest"])
 

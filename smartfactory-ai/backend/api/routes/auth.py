@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
-from ...services.sqlite_db import get_db_connection
-from ...services.auth_utils import hash_password, verify_password, create_jwt
+from services.sqlite_db import get_db_connection
+from services.auth_utils import hash_password, verify_password, create_jwt
 import uuid
 from datetime import datetime
 

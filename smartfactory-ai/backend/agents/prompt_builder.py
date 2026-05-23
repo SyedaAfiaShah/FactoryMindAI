@@ -3,8 +3,8 @@ from datetime import datetime
 from collections import defaultdict
 from typing import Any, Dict, List
 
-from ..ml.model_registry import load_model
-from ..services.supabase_client import supabase_service
+from ml.model_registry import load_model
+from services.supabase_client import supabase_service
 
 SENSOR_INT_FIELDS = {
     "UDI",

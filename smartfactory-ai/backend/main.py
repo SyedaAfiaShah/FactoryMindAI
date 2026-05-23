@@ -1,9 +1,9 @@
 from datetime import datetime
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .api.routes import scenarios, ingest, analyze, results, ml_routes, auth
-from .ml.model_registry import init_models
-from .services.sqlite_db import init_db
+from api.routes import scenarios, ingest, analyze, results, ml_routes, auth
+from ml.model_registry import init_models
+from services.sqlite_db import init_db
 from contextlib import asynccontextmanager
 
 @asynccontextmanager

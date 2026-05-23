@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
-from .feature_engineering import engineer_features
+from ml.feature_engineering import engineer_features
 
 class PredictionResult(BaseModel):
     machine_id: str

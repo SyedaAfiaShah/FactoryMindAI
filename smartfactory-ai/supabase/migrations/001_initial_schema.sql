@@ -3,6 +3,18 @@
 -- Enable UUID extension if not exists
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Drop existing tables to allow a clean reset
+DROP TABLE IF EXISTS ml_predictions CASCADE;
+DROP TABLE IF EXISTS notifications CASCADE;
+DROP TABLE IF EXISTS simulations CASCADE;
+DROP TABLE IF EXISTS action_steps CASCADE;
+DROP TABLE IF EXISTS actions CASCADE;
+DROP TABLE IF EXISTS contradictions CASCADE;
+DROP TABLE IF EXISTS insights CASCADE;
+DROP TABLE IF EXISTS agent_traces CASCADE;
+DROP TABLE IF EXISTS data_sources CASCADE;
+DROP TABLE IF EXISTS scenarios CASCADE;
+
 -- Table: scenarios
 CREATE TABLE scenarios (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

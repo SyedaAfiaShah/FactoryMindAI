@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import List, Dict, Any
 from datetime import datetime
-from ..models.scenario import ScenarioResponse # Reusing for structure if needed or just Pydantic models
-from ...ml.maintenance_model import MaintenancePredictor, PredictionResult
-from ...ml.model_registry import load_model
+from api.models.scenario import ScenarioResponse
+from ml.maintenance_model import MaintenancePredictor, PredictionResult
+from ml.model_registry import load_model
 
 router = APIRouter(prefix="/ml", tags=["machine-learning"])
 

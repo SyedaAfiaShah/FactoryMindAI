@@ -28,7 +28,7 @@ async def init_models() -> None:
     """
     Initializes models on startup. Loads from disk or trains on sample data if missing.
     """
-    from .maintenance_model import MaintenancePredictor
+    from ml.maintenance_model import MaintenancePredictor
     
     predictor = load_model("maintenance_predictor")
     

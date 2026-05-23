@@ -1,8 +1,8 @@
 import logging
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from typing import Dict, Any
-from ...agents.orchestrator import AntigravityOrchestrator, PipelineExecutionError
-from ...services.supabase_client import supabase_service
+from agents.antigravity_client import AntigravityOrchestrator, PipelineExecutionError
+from services.supabase_client import supabase_service
 import uuid
 
 router = APIRouter(prefix="/scenarios", tags=["analyze"])

@@ -1,9 +1,9 @@
 from typing import List
 from fastapi import APIRouter, HTTPException, Depends, Header
-from ..models.scenario import ScenarioCreate, ScenarioResponse
-from ...services.supabase_client import supabase_service
-from ...services.auth_utils import decode_jwt
-from ...services.sqlite_db import get_db_connection
+from api.models.scenario import ScenarioCreate, ScenarioResponse
+from services.supabase_client import supabase_service
+from services.auth_utils import decode_jwt
+from services.sqlite_db import get_db_connection
 from datetime import datetime
 import uuid
 

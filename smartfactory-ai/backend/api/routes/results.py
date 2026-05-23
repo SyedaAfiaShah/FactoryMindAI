@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
-from ...services.supabase_client import supabase_service
+from services.supabase_client import supabase_service
 from typing import Dict, Any, List
-from ...agents.prompt_builder import build_scenario_payload
+from agents.prompt_builder import build_scenario_payload
 from datetime import datetime
 
 router = APIRouter(prefix="/scenarios", tags=["results"])
