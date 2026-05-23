@@ -88,6 +88,7 @@ export default function App() {
   const [role, setRole] = useState('operator');
   const [authError, setAuthError] = useState('');
   const [isOfflineMode, setIsOfflineMode] = useState(false);
+  const [isBackendConnected, setIsBackendConnected] = useState(true);
 
   // Global Scenarios state
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
@@ -137,6 +138,7 @@ export default function App() {
   // Fetch Scenarios from API
   const fetchScenarios = async () => {
     if (isOfflineMode) {
+      setIsBackendConnected(true);
       // Mock historical list
       setScenarios([
         {
@@ -167,11 +169,15 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         setScenarios(data.data !== undefined ? data.data : data);
+        setIsBackendConnected(true);
       } else if (res.status === 401) {
         handleLogout();
+      } else {
+        setIsBackendConnected(false);
       }
     } catch (err) {
       console.error('Failed to fetch scenarios', err);
+      setIsBackendConnected(false);
     } finally {
       setLoadingScenarios(false);
     }
@@ -898,7 +904,6 @@ export default function App() {
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', flex: 1 }}>
           <div className="logo-container">
             <div className="logo-icon">FM</div>
-            <div className="logo-text">FactoryMind AI</div>
           </div>
 
           <div className="nav-buttons">
@@ -1012,6 +1017,41 @@ export default function App() {
         </header>
 
         <div className="workspace-body">
+        {!isOfflineMode && !isBackendConnected && (
+          <div style={{
+            backgroundColor: 'rgba(235, 140, 0, 0.08)',
+            borderLeft: '3px solid var(--accent-orange)',
+            color: 'var(--on-surface)',
+            padding: '12px 16px',
+            borderRadius: 'var(--radius-sm)',
+            fontSize: '12px',
+            marginBottom: 'var(--gutter)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '12px'
+          }}>
+            <div>
+              <strong>Local backend server is offline.</strong> Make sure to start the Python backend on your system. Alternatively, you can use the offline sandbox mode.
+            </div>
+            <button 
+              onClick={handleOfflineAccess}
+              className="btn-primary"
+              style={{
+                padding: '4px 10px',
+                fontSize: '10px',
+                backgroundColor: 'var(--accent-orange)',
+                color: 'white',
+                border: 'none',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'pointer'
+              }}
+            >
+              Switch to Sandbox
+            </button>
+          </div>
+        )}
+
         {errorMessage && (
           <div style={{
             backgroundColor: 'rgba(186, 26, 26, 0.06)',
@@ -2013,8 +2053,8 @@ export default function App() {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10px', color: 'var(--outline)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             <span>Backend Gateway</span>
-            <span style={{ color: isOfflineMode ? 'var(--accent-orange)' : 'var(--state-success)' }}>
-              {isOfflineMode ? 'SANDBOX' : 'CONNECTED'}
+            <span style={{ color: isOfflineMode ? 'var(--accent-orange)' : (isBackendConnected ? 'var(--state-success)' : 'var(--state-critical)') }}>
+              {isOfflineMode ? 'SANDBOX' : (isBackendConnected ? 'CONNECTED' : 'DISCONNECTED')}
             </span>
           </div>
         </div>
