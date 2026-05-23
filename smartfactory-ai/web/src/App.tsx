@@ -2105,6 +2105,18 @@ function generateMockScenarioResults(
         confidence: 0.92,
         machine_id: machineId,
         created_at: new Date().toISOString()
+      },
+      {
+        id: 'ins-2',
+        scenario_id: scenarioId,
+        category: 'demand',
+        severity: 'high',
+        title: 'Production Demand & Supply Gap Forecast',
+        description: `Backlog delivery at risk. Projected stockout risk: 78%. Raw material runway: 4 days. Backlog delay will impact batch B482.`,
+        evidence: { stockout_risk_pct: 78, raw_material_days: 4 },
+        confidence: 0.85,
+        machine_id: machineId,
+        created_at: new Date().toISOString()
       }
     ],
     contradictions: [
