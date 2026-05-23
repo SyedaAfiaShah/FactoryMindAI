@@ -1,0 +1,16 @@
+fastapi
+supabase
+uvicorn
+python-multipart
+pydantic
+pydantic-settings
+python-dotenv
+httpx
+pandas
+scikit-learn
+joblib
+numpy
+prophet
+google-genai
+langgraph
+tenacity
