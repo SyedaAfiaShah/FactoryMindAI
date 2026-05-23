@@ -1233,10 +1233,25 @@ export default function App() {
                     <p style={{ marginTop: '12px', fontSize: '12px' }}>Loading scenario database...</p>
                   </div>
                 ) : scenarios.length === 0 ? (
-                  <div className="empty-state">
-                    <HelpCircle size={40} className="empty-state-icon" />
-                    <p style={{ fontSize: '13px', fontWeight: 600 }}>No Scenario runs found</p>
-                    <p style={{ fontSize: '11px', marginTop: '4px' }}>Click "New Scenario Analysis" to run the AI Orchestrator.</p>
+                  <div className="empty-state" style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <HelpCircle size={44} className="empty-state-icon" style={{ color: 'var(--accent-orange)', marginBottom: '12px' }} />
+                    <p style={{ fontSize: '15px', fontWeight: 800, color: 'var(--accent-navy)', marginBottom: '8px', textAlign: 'center' }}>Welcome to FactoryMind AI Command Center</p>
+                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center', maxWidth: '480px', marginBottom: '24px', lineHeight: '1.5' }}>
+                      No scenarios have been run yet. To demonstrate the system's full multi-agent diagnostic capabilities, use our preloaded industrial failure templates.
+                    </p>
+                    
+                    <div style={{ width: '100%', maxWidth: '480px', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '18px', textAlign: 'left' }}>
+                      <h4 style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: 800, color: 'var(--accent-bronze)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px', letterSpacing: '0.05em' }}>
+                        ⚡ Judge & User Demo Quick Start
+                      </h4>
+                      <ol style={{ fontSize: '12px', color: 'var(--text-primary)', paddingLeft: '18px', display: 'flex', flexDirection: 'column', gap: '10px', lineHeight: '1.4' }}>
+                        <li>Click the <strong>+ New Scenario</strong> button in the top menu bar.</li>
+                        <li>Select one of the <strong>Operational Template Presets</strong> at the top of the overlay (e.g., <em>Scenario 1: Overstrain Escalation</em>).</li>
+                        <li>The incident details, operator notes, emails, and news feeds will prepopulate automatically.</li>
+                        <li><strong>No CSV file upload is required</strong>—leaving the file input empty will auto-inject the correct, realistic sensor telemetry.</li>
+                        <li>Click <strong>Trigger Multi-Agent Analysis</strong> to watch the 5-agent Antigravity pipeline collaborate and run digital twin simulations in real-time!</li>
+                      </ol>
+                    </div>
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
