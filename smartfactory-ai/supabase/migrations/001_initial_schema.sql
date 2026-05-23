@@ -21,7 +21,7 @@ CREATE TABLE scenarios (
     name TEXT NOT NULL,
     description TEXT,
     status TEXT CHECK (status IN ('pending', 'analyzing', 'complete', 'error')) DEFAULT 'pending',
-    user_id UUID REFERENCES auth.users(id),
+    user_id UUID,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
