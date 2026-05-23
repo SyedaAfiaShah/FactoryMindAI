@@ -6,15 +6,97 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FactoryMind AI — Autonomous Industrial Intelligence</title>
     <meta name="description" content="FactoryMind AI is an autonomous multi-agent AI platform for smart factory orchestration, contradiction detection, and industrial telemetry analysis." />
-    <!-- Google Fonts: Inter + JetBrains Mono -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
+
+    <!-- DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+
+    <!-- Preconnect to font origins (keeps connection warm) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-    <!-- Material Symbols Outlined -->
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+
+    <!--
+      Load fonts with display=swap so text renders immediately in a system
+      font while the web font downloads in the background (no render block).
+    -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    </noscript>
+
+    <!-- Material Symbols — also non-blocking -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+      rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+    </noscript>
+
+    <!--
+      Inline critical CSS: sets the background color and shows a centred
+      loading spinner IMMEDIATELY before any JS or external CSS loads.
+      This eliminates the white flash entirely.
+    -->
+    <style>
+      *,::before,::after{box-sizing:border-box;margin:0;padding:0}
+      html,body{height:100%;width:100%}
+      body{background-color:#fcf9f4;font-family:Inter,system-ui,-apple-system,sans-serif}
+      #root{min-height:100vh;display:flex;flex-direction:column}
+
+      /* Splash screen — visible until React mounts and hides it */
+      #app-splash{
+        position:fixed;inset:0;
+        background:#fcf9f4;
+        display:flex;flex-direction:column;
+        align-items:center;justify-content:center;
+        gap:20px;
+        z-index:9999;
+        transition:opacity 0.3s ease;
+      }
+      #app-splash.hidden{opacity:0;pointer-events:none}
+      .splash-logo{
+        width:52px;height:52px;
+        background:#041627;
+        border-radius:4px;
+        display:flex;align-items:center;justify-content:center;
+        color:#fff;font-size:22px;font-weight:800;
+        letter-spacing:-0.02em;
+        font-family:Inter,system-ui,sans-serif;
+      }
+      .splash-title{
+        font-size:13px;font-weight:700;
+        color:#a04100;text-transform:uppercase;
+        letter-spacing:0.08em;
+        font-family:Inter,system-ui,sans-serif;
+      }
+      .splash-spinner{
+        width:28px;height:28px;
+        border:3px solid #e5e2dd;
+        border-top-color:#a04100;
+        border-radius:50%;
+        animation:splash-spin 0.7s linear infinite;
+      }
+      @keyframes splash-spin{to{transform:rotate(360deg)}}
+    </style>
   </head>
   <body>
+    <!-- Splash shown instantly before React loads -->
+    <div id="app-splash">
+      <div class="splash-logo">FM</div>
+      <div class="splash-title">FactoryMind AI</div>
+      <div class="splash-spinner"></div>
+    </div>
+
     <div id="root"></div>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

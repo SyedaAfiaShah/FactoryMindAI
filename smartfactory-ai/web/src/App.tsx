@@ -178,10 +178,15 @@ export default function App() {
     }
 
     setLoadingScenarios(true);
+    // Use AbortController so slow backends never silently hang the UI
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
     try {
       const res = await fetch(`${API_BASE}/scenarios`, {
-        headers: getHeaders()
+        headers: getHeaders(),
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
       if (res.ok) {
         const data = await res.json();
         const rawList = data.data !== undefined ? data.data : data;
@@ -192,8 +197,13 @@ export default function App() {
       } else {
         setIsBackendConnected(false);
       }
-    } catch (err) {
-      console.error('Failed to fetch scenarios', err);
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      if (err?.name === 'AbortError') {
+        console.warn('fetchScenarios: request timed out after 6s');
+      } else {
+        console.error('Failed to fetch scenarios', err);
+      }
       setIsBackendConnected(false);
     } finally {
       setLoadingScenarios(false);
@@ -211,9 +221,13 @@ export default function App() {
         return;
       }
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
       const res = await fetch(`${API_BASE}/scenarios/${scenarioId}/results`, {
-        headers: getHeaders()
+        headers: getHeaders(),
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
       if (res.ok) {
         const data = await res.json();
         const resultsPayload = data.data !== undefined ? data.data : data;
@@ -228,10 +242,12 @@ export default function App() {
         }
         setAnalysisStatus(resultsPayload?.status || 'complete');
       }
-    } catch (err) {
-      console.error('Failed to fetch scenario results', err);
-    } finally {
-      // Done fetching
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        console.warn('fetchScenarioResults: request timed out after 8s');
+      } else {
+        console.error('Failed to fetch scenario results', err);
+      }
     }
   };
 
@@ -495,9 +511,13 @@ export default function App() {
       }
 
       try {
+        const pollController = new AbortController();
+        const pollTimeout = setTimeout(() => pollController.abort(), 5000);
         const res = await fetch(`${API_BASE}/scenarios/${scenarioId}/status`, {
-          headers: getHeaders()
+          headers: getHeaders(),
+          signal: pollController.signal
         });
+        clearTimeout(pollTimeout);
         if (res.ok) {
           const statusData = await res.json();
           const status = statusData.status || 'analyzing';

@@ -3,8 +3,9 @@
    Tokens sourced from Stitch/Google Figma mockups
    ============================================================ */
 
-/* --- 1. GOOGLE FONTS IMPORT (fallback if not in <head>) --- */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+/* --- 1. FONT IMPORTS ---
+   Fonts are loaded non-blocking via <link> in index.html.
+   The @import here was removed to avoid a second blocking round-trip. */
 
 /* --- 2. DESIGN TOKENS (CSS Custom Properties) --- */
 :root {
