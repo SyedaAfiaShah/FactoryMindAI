@@ -51,21 +51,21 @@ class AntigravityOrchestrator:
             # Step 1: Machine Health Agent
             logger.info("Agent 1: Analyzing Machine Health...")
             p1 = build_agent1_prompt(context)
-            health_output = await self.gemini.generate_json(p1)
+            health_output = await self.gemini.generate_json_fast(p1)
             await self._save_trace(scenario_id, "machine_health", p1, health_output)
             agent_traces.append({"agent": "machine_health", "output": health_output})
 
             # Step 2: Contradiction Detection Agent
             logger.info("Agent 2: Detecting Contradictions...")
             p2 = build_agent2_prompt(context, health_output)
-            contradiction_output = await self.gemini.generate_json(p2)
+            contradiction_output = await self.gemini.generate_json_fast(p2)
             await self._save_trace(scenario_id, "contradiction_detection", p2, contradiction_output)
             agent_traces.append({"agent": "contradiction_detection", "output": contradiction_output})
 
             # Step 3: Demand Forecast Agent
             logger.info("Agent 3: Forecasting Demand...")
             p3 = build_agent3_prompt(context, health_output, contradiction_output)
-            demand_output = await self.gemini.generate_json(p3)
+            demand_output = await self.gemini.generate_json_fast(p3)
             await self._save_trace(scenario_id, "demand_forecast", p3, demand_output)
             agent_traces.append({"agent": "demand_forecast", "output": demand_output})
 

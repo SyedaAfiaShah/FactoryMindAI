@@ -75,21 +75,21 @@ class AntigravityOrchestrator:
             # Step 1: Machine Health Agent
             logger.info("Agent 1: Analyzing Machine Health...")
             p1 = build_agent1_prompt(context)
-            health_output = await self._generate_response("machine_health", p1)
+            health_output = await self._generate_response("machine_health", p1, fast=True)
             await self._save_trace(scenario_id, "machine_health", p1, health_output)
             agent_traces.append({"agent": "machine_health", "output": health_output})
 
             # Step 2: Contradiction Detection Agent
             logger.info("Agent 2: Detecting Contradictions...")
             p2 = build_agent2_prompt(context, health_output)
-            contradiction_output = await self._generate_response("contradiction_detection", p2)
+            contradiction_output = await self._generate_response("contradiction_detection", p2, fast=True)
             await self._save_trace(scenario_id, "contradiction_detection", p2, contradiction_output)
             agent_traces.append({"agent": "contradiction_detection", "output": contradiction_output})
 
             # Step 3: Demand Forecast Agent
             logger.info("Agent 3: Forecasting Demand...")
             p3 = build_agent3_prompt(context, health_output, contradiction_output)
-            demand_output = await self._generate_response("demand_forecast", p3)
+            demand_output = await self._generate_response("demand_forecast", p3, fast=True)
             await self._save_trace(scenario_id, "demand_forecast", p3, demand_output)
             agent_traces.append({"agent": "demand_forecast", "output": demand_output})
 
@@ -143,7 +143,7 @@ class AntigravityOrchestrator:
             self.supabase.client.table("scenarios").update({"status": "error"}).eq("id", scenario_id).execute()
             raise PipelineExecutionError(str(e)) from e
 
-    async def _generate_response(self, agent_name: str, prompt: str) -> Dict[str, Any]:
+    async def _generate_response(self, agent_name: str, prompt: str, fast: bool = False) -> Dict[str, Any]:
         """Helper to generate response, handling Vertex AI Reasoning Engine or fallback."""
         if self.engine:
             # Execute via ReasoningEngine with exponential backoff / retry logic (max 3 retries)
@@ -164,6 +164,9 @@ class AntigravityOrchestrator:
                         time.sleep(2 ** (attempt + 1))
         
         # Fallback to direct GeminiClient
+        # Use fast/lite models for simpler agents (1-3), full model for agents 4-5
+        if fast:
+            return await self.gemini.generate_json_fast(prompt)
         return await self.gemini.generate_json(prompt)
 
     async def _save_trace(self, scenario_id: str, agent_name: str, prompt_sent: str, output: Dict[str, Any]):

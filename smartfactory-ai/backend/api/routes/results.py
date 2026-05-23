@@ -225,7 +225,52 @@ async def get_results(scenario_id: str) -> Dict[str, Any]:
             final_results["notifications"] = final_results["notifications"] or fallback_results["notifications"]
         else:
             final_results["action_steps"] = []
-            final_results["simulations"] = final_results["simulation"]
+            # Normalize agent 5 simulation items to match the frontend Simulation type
+            raw_sims = final_results["simulation"] or []
+            normalized_sims = []
+            for idx, sim in enumerate(raw_sims):
+                if not isinstance(sim, dict):
+                    continue
+                sim_id = sim.get("id") or f"{scenario_id}-sim-{idx + 1}"
+                # Convert execution_steps list to execution_log format for the terminal display
+                exec_steps = sim.get("execution_steps") or []
+                exec_log = sim.get("execution_log")
+                if not exec_log and exec_steps:
+                    exec_log = [
+                        {"timestamp": f"12:00:{str(i + 1).zfill(2)}", "message": step}
+                        for i, step in enumerate(exec_steps)
+                    ]
+                normalized_sims.append({
+                    "id": sim_id,
+                    "scenario_id": scenario_id,
+                    "action_id": sim.get("action_id", ""),
+                    "title": sim.get("title", ""),
+                    "before_state": sim.get("before_state", {}),
+                    "after_state": sim.get("after_state", {}),
+                    "delta": sim.get("delta", {}),
+                    "execution_log": exec_log or [],
+                    "execution_steps": exec_steps,
+                    "created_at": datetime.utcnow().isoformat(),
+                })
+            final_results["simulations"] = normalized_sims or _build_fallback_results(scenario_id, context)["simulations"]
+            # Normalize notifications
+            raw_notifs = final_results["notifications"] or []
+            normalized_notifs = []
+            for nidx, notif in enumerate(raw_notifs):
+                if not isinstance(notif, dict):
+                    continue
+                normalized_notifs.append({
+                    "id": notif.get("id") or f"{scenario_id}-notif-{nidx + 1}",
+                    "simulation_id": notif.get("simulation_id") or "",
+                    "channel": notif.get("channel", "Email"),
+                    "recipient_name": notif.get("recipient_name") or notif.get("recipient") or "Operator",
+                    "recipient_role": notif.get("recipient_role") or notif.get("recipient") or "Factory Staff",
+                    "message_body": notif.get("message_body") or notif.get("message") or "",
+                    "subject": notif.get("subject") or "SmartFactory AI Alert",
+                    "sent_at": datetime.utcnow().isoformat(),
+                    "created_at": datetime.utcnow().isoformat(),
+                })
+            final_results["notifications"] = normalized_notifs
 
         return {
             "scenario_id": scenario_id,

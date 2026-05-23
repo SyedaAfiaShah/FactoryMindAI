@@ -111,6 +111,51 @@ class GeminiClient:
         retry=retry_if_exception(lambda exc: not isinstance(exc, GeminiQuotaError)),
         before_sleep=lambda retry_state: logger.warning(f"Retrying multi-provider AI call... Attempt {retry_state.attempt_number}")
     )
+    async def generate_json_fast(self, prompt: str) -> Dict[str, Any]:
+        """
+        Faster JSON generation using lightweight models (gemini-2.0-flash-lite first).
+        Best for simpler agents (1, 2, 3) where speed matters more than reasoning depth.
+        Falls back to the standard generate_json pipeline if fast models fail.
+        """
+        loop = asyncio.get_event_loop()
+        fast_models = ["gemini-2.0-flash-lite", "gemini-2.0-flash", "gemini-2.5-flash-lite"]
+
+        # Try fast models via Developer API first
+        if self.developer_client and not self.skip_developer_api:
+            for model_name in fast_models:
+                try:
+                    response = await loop.run_in_executor(
+                        None,
+                        lambda current_model=model_name: self.developer_client.models.generate_content(
+                            model=current_model,
+                            contents=prompt,
+                            config=genai.types.GenerateContentConfig(
+                                automatic_function_calling=genai.types.AutomaticFunctionCallingConfig(
+                                    maximum_remote_calls=1
+                                )
+                            )
+                        )
+                    )
+                    if response and response.text:
+                        logger.info(f"Fast generation succeeded using AI Studio model: {model_name}")
+                        return self._parse_json_response(response.text)
+                except Exception as model_error:
+                    if self._is_quota_error(model_error):
+                        logger.warning(f"Fast model {model_name} quota hit. Trying next.")
+                        self.skip_developer_api = True
+                        break
+                    logger.warning(f"Fast model {model_name} failed: {str(model_error)}. Trying next.")
+                    continue
+
+        # Fall back to the full standard pipeline
+        return await self.generate_json(prompt)
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception(lambda exc: not isinstance(exc, GeminiQuotaError)),
+        before_sleep=lambda retry_state: logger.warning(f"Retrying multi-provider AI call... Attempt {retry_state.attempt_number}")
+    )
     async def generate_json(self, prompt: str) -> Dict[str, Any]:
         """
         Generates a JSON response, falling back dynamically:
@@ -181,7 +226,7 @@ class GeminiClient:
         if self.groq_api_key:
             logger.info("Attempting generation via Groq API (llama-3.3-70b-versatile)...")
             try:
-                async with httpx.AsyncClient(timeout=30.0) as http_client:
+                async with httpx.AsyncClient(timeout=60.0) as http_client:
                     groq_response = await http_client.post(
                         "https://api.groq.com/openai/v1/chat/completions",
                         headers={

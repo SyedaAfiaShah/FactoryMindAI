@@ -97,10 +97,12 @@ export interface Simulation {
   id: string;
   scenario_id: string;
   action_id: string;
+  title?: string;
   before_state: Record<string, any>;
   after_state: Record<string, any>;
   delta: Record<string, any>;
-  execution_log: Record<string, any>[];
+  execution_log?: Record<string, any>[];
+  execution_steps?: string[];
   created_at: string;
 }
 

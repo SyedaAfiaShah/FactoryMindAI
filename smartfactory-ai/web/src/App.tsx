@@ -549,7 +549,7 @@ export default function App() {
       }));
     } else if (stepCount <= 6) {
       setCurrentAgentIndex(1); // Contradiction
-      setAgentProgress(Math.min(30 + (stepCount - 3) * 10, 60));
+      setAgentProgress(Math.min(30 + (stepCount - 3) * 10, 55));
       setAgentLogs(prev => ({
         ...prev,
         'machine_health': [...(prev['machine_health'] || []), '[HEALTH] Task complete. Saved trace to cloud.'],
@@ -561,7 +561,7 @@ export default function App() {
       }));
     } else if (stepCount <= 9) {
       setCurrentAgentIndex(2); // Demand
-      setAgentProgress(Math.min(60 + (stepCount - 6) * 8, 80));
+      setAgentProgress(Math.min(55 + (stepCount - 6) * 7, 74));
       setAgentLogs(prev => ({
         ...prev,
         'contradiction_detection': [...(prev['contradiction_detection'] || []), '[CONTRADICTION] Contradiction evaluated. Prioritizing physical telemetry.'],
@@ -571,21 +571,43 @@ export default function App() {
           `[DEMAND] Projecting 48-hour delivery delay of spare parts. Outage will impact order batch B482.`
         ]
       }));
-    } else {
-      setCurrentAgentIndex(3); // Action Planner & Sim
-      setAgentProgress(90);
+    } else if (stepCount <= 15) {
+      setCurrentAgentIndex(3); // Action Planner
+      setAgentProgress(Math.min(74 + (stepCount - 10) * 2, 84));
+      const plannerMsgs = [
+        `[PLANNER] Initializing action planning module...`,
+        `[PLANNER] Loading machine health risk profile and contradiction flags...`,
+        `[PLANNER] Computing optimal intervention sequence...`,
+        `[PLANNER] Action P1: Lower load on ${machineId}. Action P2: Shift jobs to backup line.`,
+        `[PLANNER] Estimating effort hours and cost. Checking part availability...`,
+        `[PLANNER] Action plan finalized with ${stepCount - 9} validated actions.`
+      ];
       setAgentLogs(prev => ({
         ...prev,
-        'demand_forecast': [...(prev['demand_forecast'] || []), '[DEMAND] Outage impact quantified.'],
+        'demand_forecast': [...(prev['demand_forecast'] || []), '[DEMAND] Outage impact quantified. Handoff to Action Planner.'],
         'action_planning': [
           ...(prev['action_planning'] || []),
-          `[PLANNER] Designing step-by-step mitigation tasks.`,
-          `[PLANNER] Action P1: Lower load on ${machineId}. Action P2: Shift jobs to backup.`
-        ],
+          plannerMsgs[Math.min(stepCount - 10, plannerMsgs.length - 1)]
+        ]
+      }));
+    } else {
+      setCurrentAgentIndex(4); // Simulation Agent
+      setAgentProgress(Math.min(84 + (stepCount - 16) * 2, 96));
+      const simMsgs = [
+        `[SIMULATION] Booting digital twin physics engine...`,
+        `[SIMULATION] Applying load-dampening vectors to twin state model...`,
+        `[SIMULATION] Projecting 48-hour telemetry recovery trajectory...`,
+        `[SIMULATION] Before/After risk delta computed: -48 pts. OEE stabilized to 88%.`,
+        `[SIMULATION] Generating stakeholder notification dispatch payloads...`,
+        `[SIMULATION] Dispatched email to Maintenance Manager. SMS sent to Shift Supervisor.`,
+        `[SIMULATION] Twin sync complete. All outputs archived to cloud trace log.`
+      ];
+      setAgentLogs(prev => ({
+        ...prev,
+        'action_planning': [...(prev['action_planning'] || []), '[PLANNER] Action planning complete. Handing off to Simulator.'],
         'simulation': [
           ...(prev['simulation'] || []),
-          `[SIMULATION] Executing digital twin recovery model...`,
-          `[SIMULATION] Projection: Risk reduced by 48%. OEE stabilized to 88%.`
+          simMsgs[Math.min(stepCount - 16, simMsgs.length - 1)]
         ]
       }));
     }
@@ -1987,8 +2009,19 @@ export default function App() {
                       );
                     };
 
+                    const matchedAction = results.actions?.find(a => a.id === sim.action_id || a.action_code === sim.action_id);
+                    const simTitle = sim.title || matchedAction?.title || `Mitigation Run (${sim.action_id})`;
+
                     return (
-                      <div key={sim.id} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      <div key={sim.id} style={{ display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '32px', borderBottom: '2px dashed var(--border-color)', marginTop: results.simulations && sim.id === results.simulations[0].id ? '0px' : '20px' }}>
+                        {/* Simulation Target Header */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', backgroundColor: 'rgba(207, 149, 58, 0.1)', color: 'var(--accent-bronze)', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.04em' }}>
+                            SIMULATED ACTION
+                          </span>
+                          <strong style={{ fontSize: '12px', color: 'var(--accent-navy)' }}>{simTitle}</strong>
+                        </div>
+
                         {/* 1. Sync Signal Header */}
                         <div style={{
                           display: 'flex',
@@ -2077,12 +2110,20 @@ export default function App() {
                         {/* 4. Terminal Log Details */}
                         <div style={{ backgroundColor: '#0c0f17', padding: '16px', borderRadius: '8px', border: '1px solid #1a2333', marginTop: '5px', boxShadow: 'inset 0 0 10px rgba(0,0,0,0.8)' }}>
                           <span style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--accent-orange)', fontWeight: 800, display: 'block', marginBottom: '8px', fontFamily: 'var(--font-mono)' }}>$ cat /var/log/digital_twin_simulation.log</span>
-                          <div className="sim-logs" style={{ color: '#38bdf8', fontFamily: 'var(--font-mono)', maxHeight: '110px' }}>
-                            {sim.execution_log && sim.execution_log.map((log: any, lIdx: number) => (
-                              <div key={lIdx} style={{ marginBottom: '4px', fontSize: '11px' }}>
-                                <span style={{ color: '#22c55e' }}>[{log.timestamp || '12:00:00'}]</span> {log.message}
-                              </div>
-                            ))}
+                          <div className="sim-logs" style={{ color: '#38bdf8', fontFamily: 'var(--font-mono)', maxHeight: '110px', overflowY: 'auto' }}>
+                            {sim.execution_log ? (
+                              sim.execution_log.map((log: any, lIdx: number) => (
+                                <div key={lIdx} style={{ marginBottom: '4px', fontSize: '11px' }}>
+                                  <span style={{ color: '#22c55e' }}>[{log.timestamp || '12:00:00'}]</span> {log.message}
+                                </div>
+                              ))
+                            ) : (
+                              sim.execution_steps && sim.execution_steps.map((step: string, lIdx: number) => (
+                                <div key={lIdx} style={{ marginBottom: '4px', fontSize: '11px' }}>
+                                  <span style={{ color: '#22c55e' }}>[STEP-{lIdx + 1}]</span> {step}
+                                </div>
+                              ))
+                            )}
                           </div>
                         </div>
                       </div>

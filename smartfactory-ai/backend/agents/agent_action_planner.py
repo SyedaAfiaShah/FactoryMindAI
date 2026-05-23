@@ -25,14 +25,15 @@ OUTPUT SCHEMA (JSON):
   "actions": [
     {{
       "id": "ACT-001",
+      "action_code": "ACT-001",
       "title": "string",
-      "description": "string",
+      "description": "string describing the specific technical intervention required",
       "priority": 1,
       "category": "Maintenance/Logistics/Production",
       "effort_hours": 0,
       "cost_estimate": 0,
-      "target_system": "string",
-      "steps": ["string"]
+      "currency": "USD",
+      "target_system": "string"
     }}
   ]
 }}
@@ -40,6 +41,7 @@ OUTPUT SCHEMA (JSON):
 INSTRUCTIONS:
 - Actions must be operationally realistic and specific.
 - Avoid generic "monitor the situation" advice.
+- The id and action_code fields must always match (e.g., both "ACT-001", "ACT-002").
 - Respond ONLY with valid JSON matching the output schema. No markdown, no explanation.
 """
     return prompt.strip()
