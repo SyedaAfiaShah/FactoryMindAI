@@ -271,8 +271,8 @@ export default function App() {
       setOperatorNotes(preset.operatorNotes);
       setSupplierEmail(preset.supplierEmail);
       setNewsUpdates(preset.newsUpdates);
-      setCustomCsvData(null);
-      setCsvFileName('');
+      setCustomCsvData(preset.sensors);
+      setCsvFileName(`${preset.id}_telemetry_stream.csv`);
     }
   };
 
