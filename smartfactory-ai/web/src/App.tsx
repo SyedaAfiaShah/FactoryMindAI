@@ -80,8 +80,21 @@ const PRESETS = [
 
 export default function App() {
   // Session / Authentication state
-  const [token, setToken] = useState<string | null>(localStorage.getItem('factorymind_token'));
-  const [user, setUser] = useState<any>(JSON.parse(localStorage.getItem('factorymind_user') || 'null'));
+  const [token, setToken] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('factorymind_token');
+    } catch (e) {
+      return null;
+    }
+  });
+  const [user, setUser] = useState<any>(() => {
+    try {
+      const u = localStorage.getItem('factorymind_user');
+      return u ? JSON.parse(u) : null;
+    } catch (e) {
+      return null;
+    }
+  });
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -168,7 +181,8 @@ export default function App() {
       });
       if (res.ok) {
         const data = await res.json();
-        setScenarios(data.data !== undefined ? data.data : data);
+        const rawList = data.data !== undefined ? data.data : data;
+        setScenarios(Array.isArray(rawList) ? rawList : []);
         setIsBackendConnected(true);
       } else if (res.status === 401) {
         handleLogout();
@@ -200,8 +214,16 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         const resultsPayload = data.data !== undefined ? data.data : data;
-        setResults(resultsPayload);
-        setAnalysisStatus(resultsPayload.status || 'complete');
+        if (resultsPayload && resultsPayload.final_results) {
+          const unpacked = {
+            ...resultsPayload,
+            ...resultsPayload.final_results
+          };
+          setResults(unpacked);
+        } else {
+          setResults(resultsPayload);
+        }
+        setAnalysisStatus(resultsPayload?.status || 'complete');
       }
     } catch (err) {
       console.error('Failed to fetch scenario results', err);
@@ -1890,14 +1912,22 @@ export default function App() {
 
                 {results.simulations && results.simulations.length > 0 ? (
                   results.simulations.map(sim => {
-                    const beforeRisk = sim.before_state?.risk_score ?? 82;
-                    const beforeOEE = sim.before_state?.production_efficiency ?? 74;
-                    const afterRisk = sim.after_state?.risk_score ?? 16;
-                    const afterOEE = sim.after_state?.production_efficiency ?? 88;
+                    if (!sim) return null;
+                    const parseVal = (val: any, fallback: number) => {
+                      if (val === undefined || val === null) return fallback;
+                      const parsed = typeof val === 'number' ? val : parseFloat(val);
+                      return isNaN(parsed) ? fallback : parsed;
+                    };
+
+                    const beforeRisk = parseVal(sim.before_state?.risk_score, 82);
+                    const beforeOEE = parseVal(sim.before_state?.production_efficiency, 74);
+                    const afterRisk = parseVal(sim.after_state?.risk_score, 16);
+                    const afterOEE = parseVal(sim.after_state?.production_efficiency, 88);
 
                     // Inline Circular Gauge Renderer
-                    const renderCircularGauge = (value: number, color: string, label: string) => {
-                      const cleanVal = Math.min(100, Math.max(0, value));
+                    const renderCircularGauge = (value: any, color: string, label: string) => {
+                      const numeric = parseVal(value, 0);
+                      const cleanVal = Math.min(100, Math.max(0, numeric));
                       return (
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                           <div style={{ position: 'relative', width: '68px', height: '68px' }}>
@@ -1936,17 +1966,21 @@ export default function App() {
                     };
 
                     // Inline Telemetry Bar Renderer
-                    const renderTelemetryBar = (name: string, beforeVal: number, afterVal: number, unit: string) => {
+                    const renderTelemetryBar = (name: string, beforeVal: any, afterVal: any, unit: string) => {
+                      const bVal = parseVal(beforeVal, 0);
+                      const aVal = parseVal(afterVal, 0);
+                      const total = bVal + aVal;
+                      const pct = total > 0 ? (bVal / total) * 100 : 0;
                       return (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', backgroundColor: 'var(--bg-primary)', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
                           <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-secondary)' }}>{name}</span>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
-                            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--state-critical)' }}>{beforeVal}{unit}</span>
+                            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--state-critical)' }}>{bVal}{unit}</span>
                             <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>➔</span>
-                            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--state-success)' }}>{afterVal}{unit}</span>
+                            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--state-success)' }}>{aVal}{unit}</span>
                           </div>
                           <div style={{ height: '4px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden', display: 'flex', marginTop: '4px' }}>
-                            <div style={{ width: `${(beforeVal / (beforeVal + afterVal)) * 100}%`, backgroundColor: 'var(--state-critical)', opacity: 0.5 }} />
+                            <div style={{ width: `${pct}%`, backgroundColor: 'var(--state-critical)', opacity: 0.5 }} />
                             <div style={{ flex: 1, backgroundColor: 'var(--state-success)' }} />
                           </div>
                         </div>
