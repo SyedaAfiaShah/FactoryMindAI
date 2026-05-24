@@ -8,9 +8,13 @@ export default defineConfig({
     // Split vendor chunks so React core is cached separately from app code
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom'],
-          'ui-vendor': ['lucide-react', 'papaparse'],
+        manualChunks(id) {
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'react-vendor';
+          }
+          if (id.includes('node_modules/lucide-react') || id.includes('node_modules/papaparse')) {
+            return 'ui-vendor';
+          }
         },
       },
     },
