@@ -1178,20 +1178,27 @@ export default function App() {
               <div style={{ marginBottom: '16px', backgroundColor: 'var(--bg-secondary)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                 <span className="form-label" style={{ marginBottom: '6px', display: 'block' }}>Operational Template Presets</span>
                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                  {PRESETS.map(preset => (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      className={`btn-secondary ${selectedPresetId === preset.id && !customCsvData ? 'active' : ''}`}
-                      style={{
-                        fontSize: '11px',
-                        borderColor: selectedPresetId === preset.id && !customCsvData ? 'var(--accent-orange)' : 'var(--border-color)'
-                      }}
-                      onClick={() => applyPreset(preset.id)}
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
+                  {PRESETS.map(preset => {
+                    const isActive = selectedPresetId === preset.id && !customCsvData;
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        className={`btn-secondary ${isActive ? 'active' : ''}`}
+                        style={{
+                          fontSize: '11px',
+                          border: isActive ? '2px solid #e05e00' : '1px solid var(--outline-variant)',
+                          color: isActive ? '#e05e00' : 'var(--on-surface-variant)',
+                          backgroundColor: isActive ? 'rgba(224, 94, 0, 0.08)' : 'transparent',
+                          fontWeight: isActive ? '800' : '700',
+                          padding: isActive ? '6px 13px' : '7px 14px'
+                        }}
+                        onClick={() => applyPreset(preset.id)}
+                      >
+                        {preset.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
