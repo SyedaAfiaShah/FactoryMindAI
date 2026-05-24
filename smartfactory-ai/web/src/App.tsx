@@ -278,7 +278,20 @@ export default function App() {
         setToken(resToken);
         setUser(resUser);
       } else {
-        setAuthError(data.detail?.detail || data.detail || 'Authentication failed');
+        let errMsg = 'Authentication failed';
+        if (data && data.detail) {
+          if (typeof data.detail === 'string') {
+            errMsg = data.detail;
+          } else if (Array.isArray(data.detail)) {
+            errMsg = data.detail.map((err: any) => {
+              const loc = Array.isArray(err.loc) ? err.loc.filter((l: any) => l !== 'body').join('.') : '';
+              return `${loc ? loc + ': ' : ''}${err.msg || JSON.stringify(err)}`;
+            }).join(', ');
+          } else if (typeof data.detail === 'object') {
+            errMsg = data.detail.message || data.detail.detail || JSON.stringify(data.detail);
+          }
+        }
+        setAuthError(errMsg);
       }
     } catch (err) {
       setAuthError('Connection refused by the backend. Ensure FastAPI server is running on localhost:8000');
