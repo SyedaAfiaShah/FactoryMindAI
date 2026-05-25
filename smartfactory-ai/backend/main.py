@@ -41,6 +41,7 @@ app.include_router(results.router, prefix="/api/v1")
 app.include_router(ml_routes.router, prefix="/api/v1")
 
 @app.get("/health")
+@app.head("/health")
 async def health_check() -> dict:
     """
     Health check endpoint to verify system status.
